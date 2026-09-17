@@ -1,0 +1,42 @@
+export const translations = {
+  en: {
+    welcomeLogin: "Welcome to Login Screen",
+    typeEmail: "Type your email address",
+    typePwd: "Type your password",
+    signIn: "Sign In",
+    createAccount: "Create New Account",
+    title: "RutinaYa",
+    subtitle: "Habits & Routine Organizer",
+    tag: "CEUTEC • Mobile Programming",
+    academicDetails: "Academic Details",
+    university: "University",
+    class: "Course",
+    teacher: "Teacher",
+    logout: "Sign Out",
+    language: "Language",
+    today: "Today",
+    summary: "Summary",
+    newHabit: "New Habit",
+    profile: "Profile"
+  },
+  es: {
+    welcomeLogin: "Bienvenido a Login",
+    typeEmail: "Ingresa tu email",
+    typePwd: "Ingresa tu contraseña",
+    signIn: "Iniciar Sesión",
+    createAccount: "Crear Nueva Cuenta",
+    title: "RutinaYa",
+    subtitle: "Organizador de Hábitos y Rutinas",
+    tag: "CEUTEC • Programación Móvil",
+    academicDetails: "Detalles Académicos",
+    university: "Universidad",
+    class: "Clase",
+    teacher: "Docente",
+    logout: "Cerrar Sesión",
+    language: "Idioma",
+    today: "Hoy",
+    summary: "Resumen",
+    newHabit: "Nuevo Hábito",
+    profile: "Mi Perfil"
+  }
+};
