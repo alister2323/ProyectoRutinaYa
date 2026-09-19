@@ -1,15 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import CustomButton from '../../components/CustomButton';
+import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function Profile({ route, navigation }: any) {
   const { language, changeLanguage, t } = useLanguage();
+  const { logout } = useAuth();
   const email = route?.params?.email || 'alister23@unitec.edu';
   const name = route?.params?.name || email.split('@')[0];
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.warn('Error al cerrar sesión:', error);
+    }
 
-  const handleLogout = () => {
     navigation.reset({
       index: 0,
       routes: [{ name: 'LoginScreen' }],

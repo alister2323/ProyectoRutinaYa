@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
+import { supabase } from "../lib/supabase";
 
-// 1. Tipado del objeto principal del contexto
 export type User = {
   email: string;
   authToken?: string;
@@ -9,39 +9,66 @@ export type User = {
 } | null;
 
 export type AuthContextType = {
-  user: User | null;
-  login: (email: string) => boolean;
-  logout: () => void;
+  user: User;
+  register: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
-// 2. Creacion del contexto 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// 3. Creacion del provider: medio por el cual manejamos el estado desde otras pantallas
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  // Declaracion del estado de usuario
   const [user, setUser] = useState<User>(null);
 
-  const login = (email: string): boolean => {
-    const isAllowed = email.endsWith(".edu") || email.includes("@");
-    if (isAllowed) {
-      setUser({ email });
+  const register = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      setUser({
+        email: data.user.email ?? email,
+        authToken: data.session?.access_token,
+        sessionToken: data.session?.refresh_token,
+        role: data.user.role ?? "user",
+      });
     }
-    return isAllowed;
   };
 
-  const logout = () => {
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      setUser({
+        email: data.user.email ?? email,
+        authToken: data.session?.access_token,
+        sessionToken: data.session?.refresh_token,
+        role: data.user.role ?? "user",
+      });
+    }
+  };
+
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, register, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// 4. Hook personalizado: exposicion del contexto a componentes de la aplicacion
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
