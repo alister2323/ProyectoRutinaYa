@@ -11,6 +11,7 @@ import {
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Register({ navigation }: any) {
   const { language, changeLanguage, t } = useLanguage();
@@ -20,8 +21,17 @@ export default function Register({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const { register } = useAuth();
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+
+
+    try{
+      await register (email, password);
+      navigation.navigate("LoginScreen");
+    } catch (error:any) {
+      console.warn("Error al registrar:", error.message);
+    }
     // Validaciones del login
     if (!name.trim()) {
       setErrorMsg(t('requiredName'));

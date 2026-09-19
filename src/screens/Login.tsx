@@ -11,15 +11,17 @@ import {
 } from 'react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
+import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Login({ navigation }: any) {
   const { language, changeLanguage, t } = useLanguage();
+  const { login } = useAuth();
   const [email, setEmail] = useState('alister23@unitec.edu');
   const [password, setPassword] = useState('alister23');
   const [generalError, setGeneralError] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setGeneralError(t('requiredFields'));
       return;
@@ -33,8 +35,14 @@ export default function Login({ navigation }: any) {
       return;
     }
 
-    setGeneralError('');
-    navigation.navigate('UserTabs', { email });
+    try {
+      setGeneralError('');
+      await login(email, password);
+      navigation.navigate('UserTabs', { email });
+    } catch (error: any) {
+      console.warn('Error al iniciar sesión:', error?.message ?? error);
+      setGeneralError('Credenciales inválidas');
+    }
   };
 
   return (
