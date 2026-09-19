@@ -6,11 +6,14 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Register({ navigation }: any) {
+  const { language, changeLanguage, t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -21,23 +24,23 @@ export default function Register({ navigation }: any) {
   const handleRegister = () => {
     // Validaciones del login
     if (!name.trim()) {
-      setErrorMsg('El nombre es obligatorio');
+      setErrorMsg(t('requiredName'));
       return;
     }
     if (!email.trim() || !email.includes('@')) {
-      setErrorMsg('Ingresa un correo electrónico válido');
+      setErrorMsg(t('validEmail'));
       return;
     }
     if (!phone.trim() || phone.replace(/\D/g, '').length < 8) {
-      setErrorMsg('Ingresa un número de teléfono válido');
+      setErrorMsg(t('validPhone'));
       return;
     }
     if (password.length < 6) {
-      setErrorMsg('La contraseña debe tener al menos 6 caracteres');
+      setErrorMsg(t('passwordLength'));
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMsg('Las contraseñas no coinciden');
+      setErrorMsg(t('passwordMismatch'));
       return;
     }
 
@@ -51,16 +54,29 @@ export default function Register({ navigation }: any) {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.languageRow}>
+          <Text style={styles.languageLabel}>{t('language')}</Text>
+          <TouchableOpacity onPress={() => changeLanguage('es')}>
+            <Text style={[styles.languageOption, language === 'es' && styles.languageActive]}>
+              {t('spanish')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => changeLanguage('en')}>
+            <Text style={[styles.languageOption, language === 'en' && styles.languageActive]}>
+              {t('english')}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.header}>
-          <Text style={styles.title}>Registro</Text>
-          <Text style={styles.subtitle}>Crea tu cuenta en RutinaYa</Text>
+          <Text style={styles.title}>{t('register')}</Text>
+          <Text style={styles.subtitle}>{t('registerSubtitle')}</Text>
         </View>
 
         {errorMsg ? <Text style={styles.errorBanner}>{errorMsg}</Text> : null}
 
         <CustomInput
-          label="Nombre Completo"
-          placeholder="Ej: Juan Pérez"
+          label={t('fullName')}
+          placeholder={t('namePlaceholder')}
           type="default"
           value={name}
           onChangeText={setName}
@@ -68,8 +84,8 @@ export default function Register({ navigation }: any) {
         />
 
         <CustomInput
-          label="Correo Electrónico"
-          placeholder="ejemplo@ceutec.edu"
+          label={t('email')}
+          placeholder={t('emailPlaceholder')}
           type="email"
           value={email}
           onChangeText={setEmail}
@@ -77,8 +93,8 @@ export default function Register({ navigation }: any) {
         />
 
         <CustomInput
-          label="Teléfono Celular"
-          placeholder="+504 9999-8888"
+          label={t('phone')}
+          placeholder={t('phonePlaceholder')}
           type="phone"
           value={phone}
           onChangeText={setPhone}
@@ -86,8 +102,8 @@ export default function Register({ navigation }: any) {
         />
 
         <CustomInput
-          label="Contraseña"
-          placeholder="Mínimo 6 caracteres"
+          label={t('password')}
+          placeholder={t('passwordPlaceholder')}
           type="password"
           value={password}
           onChangeText={setPassword}
@@ -95,8 +111,8 @@ export default function Register({ navigation }: any) {
         />
 
         <CustomInput
-          label="Confirmar Contraseña"
-          placeholder="Repite la contraseña"
+          label={t('confirmPassword')}
+          placeholder={t('confirmPasswordPlaceholder')}
           type="password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -105,13 +121,13 @@ export default function Register({ navigation }: any) {
 
         <View style={styles.buttonsArea}>
           <CustomButton
-            title="Registrarse"
+            title={t('register')}
             onPress={handleRegister}
             variant="primary"
           />
 
           <CustomButton
-            title="Volver al Login"
+            title={t('backToLogin')}
             onPress={() => navigation.goBack()}
             variant="secondary"
           />
@@ -129,6 +145,26 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingTop: 40,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 24,
+  },
+  languageLabel: {
+    color: '#64748b',
+    fontSize: 12,
+  },
+  languageOption: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  languageActive: {
+    color: '#0f172a',
+    textDecorationLine: 'underline',
   },
   header: {
     marginBottom: 20,

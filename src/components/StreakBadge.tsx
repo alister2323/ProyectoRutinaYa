@@ -37,12 +37,12 @@ const styles = StyleSheet.create({
   },
   badgeBroken: {
     backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    borderColor: '#000000',
     borderWidth: 1,
   },
   badgeActive: {
     backgroundColor: '#fff7ed',
-    borderColor: '#fdba74',
+    borderColor: '#000000',
     borderWidth: 1,
   },
   textBroken: {

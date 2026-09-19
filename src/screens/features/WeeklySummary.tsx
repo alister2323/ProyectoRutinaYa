@@ -1,43 +1,45 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function WeeklySummary() {
+  const { t } = useLanguage();
   // Datos simulados de la semana (Lunes a Domingo)
   const weekDays = [
-    { day: 'Lun', pct: 80 },
-    { day: 'Mar', pct: 100 },
-    { day: 'Mié', pct: 75 },
-    { day: 'Jue', pct: 90 },
-    { day: 'Vie', pct: 85 },
-    { day: 'Sáb', pct: 60 },
-    { day: 'Dom', pct: 80 },
+    { day: t('mon'), pct: 80 },
+    { day: t('tue'), pct: 100 },
+    { day: t('wed'), pct: 75 },
+    { day: t('thu'), pct: 90 },
+    { day: t('fri'), pct: 85 },
+    { day: t('sat'), pct: 60 },
+    { day: t('sun'), pct: 80 },
   ];
 
   const habitsSummary = [
-    { name: 'Tomar 2L de Agua', pct: 90, color: '#0ea5e9' },
-    { name: 'Hacer Ejercicio', pct: 75, color: '#10b981' },
-    { name: 'Leer 15 Páginas', pct: 55, color: '#8b5cf6' },
-    { name: 'Dormir antes 11 PM', pct: 70, color: '#6366f1' },
+    { name: t('waterHabit'), pct: 90, color: '#0ea5e9' },
+    { name: t('exerciseHabit'), pct: 75, color: '#10b981' },
+    { name: t('readingHabit'), pct: 55, color: '#8b5cf6' },
+    { name: t('sleepHabit'), pct: 70, color: '#6366f1' },
   ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Resumen Semanal</Text>
-      <Text style={styles.subtitle}>Cumplimiento en los últimos 7 días</Text>
+      <Text style={styles.title}>{t('weeklySummary')}</Text>
+      <Text style={styles.subtitle}>{t('lastSevenDays')}</Text>
 
       {/* Tarjeta General */}
       <View style={styles.metricCard}>
         <View style={styles.metricRow}>
-          <Text style={styles.metricLabel}>Cumplimiento General</Text>
+          <Text style={styles.metricLabel}>{t('overallCompletion')}</Text>
           <Text style={styles.metricValue}>81%</Text>
         </View>
-        <Text style={styles.metricNote}>¡Excelente semana! Mantienes una gran constancia.</Text>
+        <Text style={styles.metricNote}>{t('excellentWeek')}</Text>
       </View>
 
       {/* Gráfica de Barras Simple en React Native */}
       <View style={styles.chartContainer}>
-        <Text style={styles.sectionHeader}>Día por Día</Text>
+        <Text style={styles.sectionHeader}>{t('dayByDay')}</Text>
         <View style={styles.barsRow}>
           {weekDays.map((item, index) => (
             <View key={index} style={styles.barCol}>
@@ -61,7 +63,7 @@ export default function WeeklySummary() {
 
       {/* Desglose por Hábito */}
       <View style={styles.breakdownCard}>
-        <Text style={styles.sectionHeader}>Cumplimiento por Hábito</Text>
+        <Text style={styles.sectionHeader}>{t('completionByHabit')}</Text>
         {habitsSummary.map((h, i) => (
           <View key={i} style={styles.habitRow}>
             <View style={styles.habitInfo}>
@@ -134,7 +136,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#000000',
   },
   sectionHeader: {
     fontSize: 15,
@@ -181,7 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#000000',
   },
   habitRow: {
     marginBottom: 12,

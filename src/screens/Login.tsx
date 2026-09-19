@@ -7,26 +7,29 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Login({ navigation }: any) {
+  const { language, changeLanguage, t } = useLanguage();
   const [email, setEmail] = useState('alister23@unitec.edu');
   const [password, setPassword] = useState('alister23');
   const [generalError, setGeneralError] = useState('');
 
   const handleLogin = () => {
     if (!email.trim() || !password.trim()) {
-      setGeneralError('Por favor completa los campos requeridos');
+      setGeneralError(t('requiredFields'));
       return;
     }
     if (!email.includes('@')) {
-      setGeneralError('Ingresa un correo electrónico válido');
+      setGeneralError(t('validEmail'));
       return;
     }
     if (password.length < 4) {
-      setGeneralError('La contraseña es demasiado corta');
+      setGeneralError(t('invalidPassword'));
       return;
     }
 
@@ -47,23 +50,37 @@ export default function Login({ navigation }: any) {
             style={styles.logoImage}
             resizeMode="contain"
           />
-          <Text style={styles.title}>RutinaYa</Text>
-          <Text style={styles.subtitle}>Organizador de Hábitos y Rutinas</Text>
+          <Text style={styles.title}>{t('title')}</Text>
+          <Text style={styles.subtitle}>{t('subtitle')}</Text>
           <View style={styles.tag}>
-            <Text style={styles.tagText}>CEUTEC • Programación Móvil</Text>
+            <Text style={styles.tagText}>{t('tag')}</Text>
           </View>
         </View>
 
+        <View style={styles.languageRow}>
+          <Text style={styles.languageLabel}>{t('language')}</Text>
+          <TouchableOpacity onPress={() => changeLanguage('es')}>
+            <Text style={[styles.languageOption, language === 'es' && styles.languageActive]}>
+              {t('spanish')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => changeLanguage('en')}>
+            <Text style={[styles.languageOption, language === 'en' && styles.languageActive]}>
+              {t('english')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Iniciar Sesión</Text>
+          <Text style={styles.formTitle}>{t('welcomeLogin')}</Text>
 
           {generalError ? (
             <Text style={styles.generalErrorText}>{generalError}</Text>
           ) : null}
 
           <CustomInput
-            label="Correo Electrónico"
-            placeholder="ejemplo@ceutec.edu"
+            label={t('email')}
+            placeholder={t('emailPlaceholder')}
             type="email"
             value={email}
             onChangeText={setEmail}
@@ -71,8 +88,8 @@ export default function Login({ navigation }: any) {
           />
 
           <CustomInput
-            label="Contraseña"
-            placeholder="Ingresa tu contraseña"
+            label={t('password')}
+            placeholder={t('typePwd')}
             type="password"
             value={password}
             onChangeText={setPassword}
@@ -80,13 +97,13 @@ export default function Login({ navigation }: any) {
           />
 
           <CustomButton
-            title="Iniciar Sesión"
+            title={t('signIn')}
             onPress={handleLogin}
             variant="primary"
           />
 
           <CustomButton
-            title="Crear Nueva Cuenta"
+            title={t('createAccount')}
             onPress={() => navigation.navigate('RegisterScreen')}
             variant="secondary"
           />
@@ -110,6 +127,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  languageRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  languageLabel: {
+    color: '#080808',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  languageOption: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  languageActive: {
+    color: '#0f172a',
+    textDecorationLine: 'underline',
+  },
   logoImage: {
     width: 80,
     height: 80,
@@ -117,24 +155,25 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    fontSize: 26,
+    fontSize: 46,
     fontWeight: '900',
-    color: '#0f172a',
+    color: '#000000',
   },
   subtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#050505',
     marginTop: 2,
+    fontWeight: 'bold',
   },
   tag: {
-    backgroundColor: '#d1fae5',
+    backgroundColor: '#000000',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     marginTop: 8,
   },
   tagText: {
-    color: '#060606',
+    color: '#ffffff',
     fontSize: 11,
     fontWeight: 'bold',
   },
@@ -151,7 +190,7 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: '#0a0a0a',
     marginBottom: 14,
   },
   generalErrorText: {

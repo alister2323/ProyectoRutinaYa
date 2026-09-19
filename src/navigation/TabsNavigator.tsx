@@ -5,6 +5,7 @@ import Home from '../screens/Home';
 import WeeklySummary from '../screens/features/WeeklySummary';
 import NewHabit from '../screens/features/NewHabit';
 import Profile from '../screens/features/Profile';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export type TabsParamList = {
   HoyTab: { email?: string; name?: string };
@@ -15,20 +16,39 @@ export type TabsParamList = {
 
 const Tab = createBottomTabNavigator<TabsParamList>();
 
-export default function TabsNavigator() {
+export default function TabsNavigator({ route }: any) {
+  const { t } = useLanguage();
+  const userParams = {
+    email: route?.params?.email,
+    name: route?.params?.name,
+  };
+
   return (
     <Tab.Navigator
       initialRouteName="HoyTab"
       screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: '#ffffff' },
-        headerTintColor: '#0f172a',
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: '#ffffff',
+          borderBottomWidth: 1,
+          borderBottomColor: '#000000',
+        },
+        headerTitleAlign: 'center',
+        headerTintColor: '#000000',
         headerTitleStyle: { fontWeight: 'bold' },
         tabBarActiveTintColor: '#070707',
-        tabBarInactiveTintColor: '#94a3b8',
+        tabBarInactiveTintColor: '#050505',
         tabBarStyle: {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
+          borderTopWidth: 1,
+          borderTopColor: '#030303',
+          backgroundColor: '#ffffff',
+          
+          borderBottomColor: '#020202',
+          
+  
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'checkbox-outline';
@@ -50,22 +70,24 @@ export default function TabsNavigator() {
       <Tab.Screen
         name="HoyTab"
         component={Home}
-        options={{ title: 'Hoy' }}
+        initialParams={userParams}
+        options={{ title: t('today') }}
       />
       <Tab.Screen
         name="ResumenTab"
         component={WeeklySummary}
-        options={{ title: 'Resumen' }}
+        options={{ title: t('summary') }}
       />
       <Tab.Screen
         name="NuevoTab"
         component={NewHabit}
-        options={{ title: 'Nuevo Hábito' }}
+        options={{ title: t('newHabit') }}
       />
       <Tab.Screen
         name="PerfilTab"
         component={Profile}
-        options={{ title: 'Mi Perfil' }}
+        initialParams={userParams}
+        options={{ title: t('profile') }}
       />
     </Tab.Navigator>
   );

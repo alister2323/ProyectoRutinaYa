@@ -2,72 +2,85 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useHabits } from '../../contexts/HabitContext';
 
 export default function NewHabit({ navigation }: any) {
+  const { t } = useLanguage();
+  const { addHabit } = useHabits();
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [selectedColor, setSelectedColor] = useState('#10b981');
-  const [frequency, setFrequency] = useState('Diario');
+  const [frequency, setFrequency] = useState('daily');
 
-  const colors = ['#8800ff', '#8800ff', '#8800ff', '#8800ff', '#8800ff', '#8800ff'];
-  const frequencies = ['Diario', 'Lun a Vie', 'Fin de Semana'];
+  const colors = ['#020202', '#535353' , '#4e0e5e' , '#5c3a7c' , '#7439aa', '#cbbcd8', ];
+  const frequencies = [
+    { key: 'daily', label: t('daily') },
+    { key: 'weekdays', label: t('weekdays') },
+    { key: 'weekend', label: t('weekend') },
+  ];
 
   const handleSave = () => {
     if (!name.trim()) {
-      alert('Por favor escribe el nombre del hábito');
+      alert(t('habitNameRequired'));
       return;
     }
-    // Guardar y regresar a pantalla Hoy
+    addHabit({
+      name: name.trim(),
+      targetAmount: target.trim() || undefined,
+      color: selectedColor,
+      frequency,
+    });
     navigation.navigate('HoyTab');
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Nuevo Hábito</Text>
-      <Text style={styles.subtitle}>Crea y personaliza un hábito a tu medida</Text>
+      <Text style={styles.title}>{t('newHabit')}</Text>
+      <Text style={styles.subtitle}>{t('newHabitSubtitle')}</Text>
 
       <View style={styles.card}>
         <CustomInput
-          label="Nombre del Hábito"
-          placeholder="Ej: Tomar 2L de agua"
+          label={t('habitName')}
+          placeholder={t('habitPlaceholder')}
           value={name}
           onChangeText={setName}
           required
         />
 
         <CustomInput
-          label="Meta Diaria (Opcional)"
-          placeholder="Ej: 8 vasos, 30 minutos"
+          label={t('dailyTarget')}
+          placeholder={t('targetPlaceholder')}
           value={target}
           onChangeText={setTarget}
         />
 
         {/* Frecuencia */}
-        <Text style={styles.sectionLabel}>Frecuencia</Text>
+        <Text style={styles.sectionLabel}>{t('frequency')}</Text>
         <View style={styles.freqRow}>
           {frequencies.map((f) => (
             <TouchableOpacity
-              key={f}
+              key={f.key}
               style={[
                 styles.freqBtn,
-                frequency === f && styles.freqBtnActive,
+                frequency === f.key && styles.freqBtnActive,
               ]}
-              onPress={() => setFrequency(f)}
+              onPress={() => setFrequency(f.key)}
             >
               <Text
                 style={[
                   styles.freqText,
-                  frequency === f && styles.freqTextActive,
+                  frequency === f.key && styles.freqTextActive,
                 ]}
               >
-                {f}
+                {f.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Colores */}
-        <Text style={styles.sectionLabel}>Color del Hábito</Text>
+        <Text style={styles.sectionLabel}>{t('habitColor')}</Text>
         <View style={styles.colorsRow}>
           {colors.map((c) => (
             <TouchableOpacity
@@ -83,7 +96,7 @@ export default function NewHabit({ navigation }: any) {
         </View>
 
         <CustomButton
-          title="Guardar Hábito"
+          title={t('saveHabit')}
           onPress={handleSave}
           variant="primary"
         />
@@ -115,7 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#000000',
   },
   sectionLabel: {
     fontSize: 13,
@@ -137,8 +150,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   freqBtnActive: {
-    backgroundColor: '#d1fae5',
-    borderColor: '#10b981',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
     borderWidth: 1,
   },
   freqText: {
@@ -147,7 +160,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   freqTextActive: {
-    color: '#065f46',
+    color: '#030303',
     fontWeight: 'bold',
   },
   colorsRow: {

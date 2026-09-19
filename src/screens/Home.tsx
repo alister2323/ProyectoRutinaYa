@@ -1,78 +1,56 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { Alert, Platform, View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import HabitCard, { HabitItem } from '../components/HabitCard';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useHabits } from '../contexts/HabitContext';
 
 export default function Home({ route, navigation }: any) {
+  const { t } = useLanguage();
+  const { habits, toggleHabit, removeHabit } = useHabits();
   const email = route?.params?.email || 'Usuario';
-
-  const [habits, setHabits] = useState<HabitItem[]>([
-    {
-      id: '1',
-      name: 'Tomar 2L de Agua',
-      color: '#0ea5e9',
-      targetAmount: '8 vasos al día',
-      frequency: 'daily',
-      currentStreak: 5,
-      completedToday: true,
-    },
-    {
-      id: '2',
-      name: 'Hacer Ejercicio 30 min',
-      color: '#10b981',
-      targetAmount: 'Cardio / Pesas',
-      frequency: 'daily',
-      currentStreak: 3,
-      completedToday: true,
-    },
-    {
-      id: '3',
-      name: 'Leer 15 Páginas',
-      color: '#8b5cf6',
-      targetAmount: 'Libro de hábitos',
-      frequency: 'daily',
-      currentStreak: 0,
-      completedToday: false,
-    },
-    {
-      id: '4',
-      name: 'Dormir antes de las 11 PM',
-      color: '#6366f1',
-      targetAmount: 'Descanso 8 horas',
-      frequency: 'daily',
-      currentStreak: 2,
-      completedToday: false,
-    },
-  ]);
-
-  const toggleHabit = (id: string) => {
-    setHabits((prev) =>
-      prev.map((h) => {
-        if (h.id === id) {
-          const nextCompleted = !h.completedToday;
-          return {
-            ...h,
-            completedToday: nextCompleted,
-            // Si se completa, suma racha. Si se desmarca, se reinicia o decrementa visualmente
-            currentStreak: nextCompleted
-              ? h.currentStreak + 1
-              : Math.max(0, h.currentStreak - 1),
-          };
-        }
-        return h;
-      })
-    );
-  };
+  const name = route?.params?.name || email.split('@')[0];
 
   const completedCount = habits.filter((h) => h.completedToday).length;
   const percentage = Math.round((completedCount / habits.length) * 100);
+
+  const localizedHabit = (habit: HabitItem): HabitItem => {
+    const defaults: Record<string, { name: string; target: string }> = {
+      '1': { name: t('waterHabit'), target: t('waterTarget') },
+      '2': { name: t('exerciseHabit'), target: t('exerciseTarget') },
+      '3': { name: t('readingHabit'), target: t('readingTarget') },
+      '4': { name: t('sleepHabit'), target: t('sleepTarget') },
+    };
+    const translated = defaults[habit.id];
+    return translated
+      ? { ...habit, name: translated.name, targetAmount: translated.target }
+      : habit;
+  };
+
+  // Pide confirmación antes de borrar para evitar eliminar un hábito por accidente.
+  const handleDeleteHabit = (habit: HabitItem) => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`${t('deleteHabit')}\n\n${t('confirmDelete')}`);
+      if (confirmed) removeHabit(habit.id);
+      return;
+    }
+
+    Alert.alert(
+      t('deleteHabit'),
+      t('confirmDelete'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('delete'), style: 'destructive', onPress: () => removeHabit(habit.id) },
+      ],
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>¡Hola, {email.split('@')[0]}!</Text>
-          <Text style={styles.subtitle}>Tus Hábitos Diarios</Text>
+          <Text style={styles.greeting}>{t('greeting')} {name}!</Text>
+          <Text style={styles.subtitle}>{t('dailyHabits')}</Text>
         </View>
 
         <TouchableOpacity
@@ -86,7 +64,7 @@ export default function Home({ route, navigation }: any) {
       {/* Tarjeta de Progreso Diario */}
       <View style={styles.progressCard}>
         <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>Progreso de Hoy</Text>
+          <Text style={styles.progressLabel}>{t('todayProgress')}</Text>
           <Text style={styles.progressPercentage}>{percentage}%</Text>
         </View>
 
@@ -95,7 +73,7 @@ export default function Home({ route, navigation }: any) {
         </View>
 
         <Text style={styles.progressFooter}>
-          {completedCount} de {habits.length} hábitos cumplidos
+          {completedCount} {t('of')} {habits.length} {t('habitsCompleted')}
         </Text>
       </View>
 
@@ -104,7 +82,11 @@ export default function Home({ route, navigation }: any) {
         data={habits}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <HabitCard habit={item} onToggle={toggleHabit} />
+          <HabitCard
+            habit={localizedHabit(item)}
+            onToggle={toggleHabit}
+            onDelete={() => handleDeleteHabit(item)}
+          />
         )}
         contentContainerStyle={styles.listContent}
       />

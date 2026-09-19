@@ -38,7 +38,7 @@ export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps)
         <View
           style={[
             styles.checkbox,
-            { borderColor: isCompleted ? habit.color : '#cbd5e1' },
+            { borderColor: isCompleted ? habit.color : '#000000' },
             isCompleted && { backgroundColor: habit.color },
           ]}
         >
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   cardCompleted: {
     backgroundColor: '#f8fafc',
-    borderColor: '#cbd5e1',
+    borderColor: '#000000',
   },
   touchArea: {
     flex: 1,

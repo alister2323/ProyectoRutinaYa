@@ -5,14 +5,17 @@ import StackNavigator from "./src/navigation/StackNavigator";
 import { navigationRef } from "./src/navigation/NavigationService";
 import { AuthProvider } from "./src/contexts/AuthContext";
 import { LanguageProvider } from "./src/contexts/LanguageContext";
+import { HabitProvider } from "./src/contexts/HabitContext";
 
 export default function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <NavigationContainer ref={navigationRef}>
-          <StackNavigator />
-        </NavigationContainer>
+        <HabitProvider>
+          <NavigationContainer ref={navigationRef}>
+            <StackNavigator />
+          </NavigationContainer>
+        </HabitProvider>
       </LanguageProvider>
     </AuthProvider>
   );
