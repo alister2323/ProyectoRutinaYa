@@ -1,5 +1,6 @@
+// Botón reutilizable para mantener el mismo diseño en toda la aplicación.
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
 type CustomButtonProps = {
   title: string;
@@ -14,24 +15,26 @@ export default function CustomButton({
   variant = 'primary',
   loading = false,
 }: CustomButtonProps) {
+  // Renderiza un botón reutilizable con estilos según su variante y un estado de carga opcional.
+  // El estilo depende de si el botón es principal, secundario o peligroso.
   const styles = getStyles(variant);
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={styles.button}
       onPress={onPress}
       disabled={loading}
-      activeOpacity={0.8}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'secondary' ? '#0f172a' : '#ffffff'} />
       ) : (
         <Text style={styles.buttonTitle}>{title}</Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
+// Crea los estilos visuales apropiados para cada tipo de botón.
 const getStyles = (variant: 'primary' | 'secondary' | 'danger') =>
   StyleSheet.create({
     button: {
@@ -48,10 +51,6 @@ const getStyles = (variant: 'primary' | 'secondary' | 'danger') =>
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
     },
     buttonTitle: {
       color: variant === 'secondary' ? '#0f172a' : '#ffffff',

@@ -1,3 +1,4 @@
+// Pantalla donde una persona escribe sus datos para iniciar sesión.
 import React, { useState } from 'react';
 import {
   View,
@@ -7,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -17,11 +18,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 export default function Login({ navigation }: any) {
   const { language, changeLanguage, t } = useLanguage();
   const { login } = useAuth();
-  const [email, setEmail] = useState('alister23@unitec.edu');
-  const [password, setPassword] = useState('alister23');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [generalError, setGeneralError] = useState('');
 
   const handleLogin = async () => {
+    // Primero valida los campos; después pide a Supabase que compruebe la cuenta.
     if (!email.trim() || !password.trim()) {
       setGeneralError(t('requiredFields'));
       return;
@@ -37,8 +39,13 @@ export default function Login({ navigation }: any) {
 
     try {
       setGeneralError('');
-      await login(email, password);
-      navigation.navigate('UserTabs', { email });
+      const authenticatedUser = await login(email.trim(), password);
+      navigation.navigate('UserTabs', {
+        email: authenticatedUser.email,
+        name: authenticatedUser.name,
+        phone: authenticatedUser.phone,
+        userId: authenticatedUser.id,
+      });
     } catch (error: any) {
       console.warn('Error al iniciar sesión:', error?.message ?? error);
       setGeneralError('Credenciales inválidas');
@@ -67,16 +74,16 @@ export default function Login({ navigation }: any) {
 
         <View style={styles.languageRow}>
           <Text style={styles.languageLabel}>{t('language')}</Text>
-          <TouchableOpacity onPress={() => changeLanguage('es')}>
+          <Pressable onPress={() => changeLanguage('es')}>
             <Text style={[styles.languageOption, language === 'es' && styles.languageActive]}>
               {t('spanish')}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => changeLanguage('en')}>
+          </Pressable>
+          <Pressable onPress={() => changeLanguage('en')}>
             <Text style={[styles.languageOption, language === 'en' && styles.languageActive]}>
               {t('english')}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.formCard}>
@@ -190,10 +197,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
   },
   formTitle: {
     fontSize: 18,

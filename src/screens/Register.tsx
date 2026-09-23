@@ -1,3 +1,4 @@
+// Pantalla para crear una cuenta nueva en Supabase.
 import React, { useState } from 'react';
 import {
   View,
@@ -6,7 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -24,15 +25,7 @@ export default function Register({ navigation }: any) {
   const { register } = useAuth();
 
   const handleRegister = async () => {
-
-
-    try{
-      await register (email, password);
-      navigation.navigate("LoginScreen");
-    } catch (error:any) {
-      console.warn("Error al registrar:", error.message);
-    }
-    // Validaciones del login
+    // Valida los datos y luego envía la nueva cuenta al servicio de autenticación.
     if (!name.trim()) {
       setErrorMsg(t('requiredName'));
       return;
@@ -55,7 +48,13 @@ export default function Register({ navigation }: any) {
     }
 
     setErrorMsg('');
-    navigation.navigate('UserTabs', { email, name });
+    try {
+      await register(email.trim(), password, name.trim(), phone.trim());
+      navigation.navigate('LoginScreen');
+    } catch (error: any) {
+      console.warn('Error al registrar:', error?.message ?? error);
+      setErrorMsg(error?.message ?? 'No se pudo crear la cuenta');
+    }
   };
 
   return (
@@ -66,16 +65,16 @@ export default function Register({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.languageRow}>
           <Text style={styles.languageLabel}>{t('language')}</Text>
-          <TouchableOpacity onPress={() => changeLanguage('es')}>
+          <Pressable onPress={() => changeLanguage('es')}>
             <Text style={[styles.languageOption, language === 'es' && styles.languageActive]}>
               {t('spanish')}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => changeLanguage('en')}>
+          </Pressable>
+          <Pressable onPress={() => changeLanguage('en')}>
             <Text style={[styles.languageOption, language === 'en' && styles.languageActive]}>
               {t('english')}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
         <View style={styles.header}>
           <Text style={styles.title}>{t('register')}</Text>

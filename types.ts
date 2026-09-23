@@ -1,3 +1,4 @@
+// Tipos generales usados para describir hábitos y las pantallas de la app.
 export interface HabitItem {
   id: string;
   name: string;

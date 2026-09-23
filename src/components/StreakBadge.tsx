@@ -1,3 +1,4 @@
+// Etiqueta visual que muestra cuántos días seguidos se ha cumplido un hábito.
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ type StreakBadgeProps = {
 };
 
 export default function StreakBadge({ streak }: StreakBadgeProps) {
+  // Muestra la racha actual y cambia de apariencia cuando el hábito no tiene días seguidos.
   const isBroken = streak === 0;
 
   if (isBroken) {

@@ -1,16 +1,20 @@
+// Pantalla con datos de la cuenta, idioma y botón para cerrar sesión.
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import CustomButton from '../../components/CustomButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function Profile({ route, navigation }: any) {
+  // Muestra los datos de la cuenta, el idioma actual y la opción de salir.
   const { language, changeLanguage, t } = useLanguage();
-  const { logout } = useAuth();
-  const email = route?.params?.email || 'alister23@unitec.edu';
-  const name = route?.params?.name || email.split('@')[0];
+  const { logout, user } = useAuth();
+  const email = user?.email || route?.params?.email || '';
+  const name = user?.name || route?.params?.name || 'Usuario';
+  const phone = user?.phone || route?.params?.phone || 'No registrado';
 
   const handleLogout = async () => {
+    // Cierra la sesión y devuelve a la persona a la pantalla de Login.
     try {
       await logout();
     } catch (error) {
@@ -39,6 +43,10 @@ export default function Profile({ route, navigation }: any) {
       <View style={styles.infoCard}>
         <Text style={styles.cardHeader}>{t('academicDetails')}</Text>
         <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>{t('phone')}:</Text>
+          <Text style={styles.infoValue}>{phone}</Text>
+        </View>
+        <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>{t('university')}:</Text>
           <Text style={styles.infoValue}>Ceutec</Text>
         </View>
@@ -56,16 +64,16 @@ export default function Profile({ route, navigation }: any) {
       <View style={styles.languageCard}>
         <Text style={styles.infoLabel}>{t('language')}</Text>
         <View style={styles.languageOptions}>
-          <TouchableOpacity onPress={() => changeLanguage('es')}>
+          <Pressable onPress={() => changeLanguage('es')}>
             <Text style={[styles.languageOption, language === 'es' && styles.languageActive]}>
               {t('spanish')}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => changeLanguage('en')}>
+          </Pressable>
+          <Pressable onPress={() => changeLanguage('en')}>
             <Text style={[styles.languageOption, language === 'en' && styles.languageActive]}>
               {t('english')}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -103,7 +111,8 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#000000',
+    fontWeight: 'bold',
     marginTop: 2,
   },
   infoCard: {
@@ -129,7 +138,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   languageOption: {
-    color: '#64748b',
+    color: '#000000',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -140,7 +149,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: '#000000',
     marginBottom: 12,
   },
   infoRow: {
@@ -152,7 +161,8 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#000000',
+    fontWeight: 'bold',
   },
   infoValue: {
     fontSize: 13,

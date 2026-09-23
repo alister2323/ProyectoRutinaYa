@@ -1,10 +1,11 @@
+// Campo reutilizable con validaciones y opción para mostrar la contraseña.
 import React, { useState } from 'react';
 import {
   KeyboardTypeOptions,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,8 @@ type CustomInputProps = {
   placeholder: string;
   type?: 'default' | 'password' | 'email' | 'phone' | 'number';
   required?: boolean;
+  blackBorder?: boolean;
+  compact?: boolean;
 };
 
 export default function CustomInput({
@@ -25,7 +28,10 @@ export default function CustomInput({
   placeholder,
   type = 'default',
   required = false,
+  blackBorder = false,
+  compact = false,
 }: CustomInputProps) {
+  // Administra el valor, el enfoque y la visibilidad de un campo reutilizable.
   const [isSecureText, setIsSecureText] = useState(type === 'password');
   const [isTouched, setIsTouched] = useState(false);
 
@@ -47,7 +53,8 @@ export default function CustomInput({
       ? 'phone-pad'
       : 'default';
 
-  // Validaciones según rúbrica
+  // Devuelve el primer mensaje de validación aplicable al contenido del campo.
+  // Comprueba el valor y devuelve un texto sencillo si hay un problema.
   const getError = (): string | null => {
     if (!isTouched && value.length === 0) return null;
 
@@ -72,19 +79,19 @@ export default function CustomInput({
   const error = getError();
 
   return (
-    <View style={styles.wrapper}>
-      {label && (
+    <View style={[styles.wrapper, compact && styles.compactWrapper]}>
+      {label ? (
         <Text style={styles.label}>
           {label} {required && <Text style={styles.required}>*</Text>}
         </Text>
-      )}
+      ) : null}
 
-      <View style={[styles.inputContainer, error && styles.inputError]}>
+      <View style={[styles.inputContainer, { borderColor: blackBorder ? '#000000' : '#cbd5e1' }, error && styles.inputError]}>
         {iconName && (
           <MaterialIcons
             name={iconName}
             size={20}
-            color="#64748b"
+            color="#000000"
             style={styles.icon}
           />
         )}
@@ -94,7 +101,7 @@ export default function CustomInput({
           onChangeText={onChangeText}
           value={value}
           placeholder={placeholder}
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor="#000000"
           keyboardType={keyboardType}
           secureTextEntry={isSecureText}
           onBlur={() => setIsTouched(true)}
@@ -102,16 +109,16 @@ export default function CustomInput({
         />
 
         {isPasswordField && (
-          <TouchableOpacity
+          <Pressable
             onPress={() => setIsSecureText(!isSecureText)}
             style={styles.eyeBtn}
           >
             <Ionicons
               name={isSecureText ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color="#64748b"
+              color="#000000"
             />
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
 
@@ -125,10 +132,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     width: '100%',
   },
+  compactWrapper: {
+    marginBottom: 0,
+  },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
+    color: '#000000',
     marginBottom: 5,
   },
   required: {
@@ -140,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderRadius: 12,
-    borderColor: '#000000',
+    borderColor: '#cbd5e1',
     borderWidth: 1,
     paddingHorizontal: 14,
     height: 48,
