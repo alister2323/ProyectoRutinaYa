@@ -44,6 +44,10 @@ alter table public.habits add column if not exists quantity numeric;
 alter table public.habits add column if not exists unit text;
 alter table public.habits add column if not exists priority integer not null default 2;
 alter table public.habits add column if not exists subtasks jsonb not null default '[]'::jsonb;
+alter table public.habits add column if not exists scheduled_days jsonb not null default '[]'::jsonb;
+alter table public.habits add column if not exists note text;
+alter table public.habits add column if not exists difficulty text not null default 'medium';
+alter table public.habits add column if not exists tags jsonb not null default '[]'::jsonb;
 
 -- Guarda cada fecha en que un hábito fue completado.
 create table if not exists public.habit_completions (
@@ -51,9 +55,21 @@ create table if not exists public.habit_completions (
   habit_id uuid not null references public.habits(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   completed_on date not null,
+  reflection text,
   created_at timestamptz not null default now(),
   -- Impide guardar dos veces el mismo hábito en el mismo día.
   unique (habit_id, completed_on)
+);
+
+alter table public.habit_completions add column if not exists reflection text;
+
+create table if not exists public.vacations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  starts_on date not null,
+  ends_on date not null,
+  created_at timestamptz not null default now(),
+  check (ends_on >= starts_on)
 );
 
 -- Guarda una meta como "cumplir 20 días" para cada usuario y mes.
@@ -72,11 +88,13 @@ create table if not exists public.monthly_goals (
 alter table public.habits enable row level security;
 alter table public.habit_completions enable row level security;
 alter table public.monthly_goals enable row level security;
+alter table public.vacations enable row level security;
 
 -- Borra políticas anteriores para poder ejecutar este archivo varias veces.
 drop policy if exists "Users can manage their habits" on public.habits;
 drop policy if exists "Users can manage their habit completions" on public.habit_completions;
 drop policy if exists "Users can manage their monthly goals" on public.monthly_goals;
+drop policy if exists "Users can manage their vacations" on public.vacations;
 
 -- Cada usuario solo puede ver y modificar sus propios hábitos.
 create policy "Users can manage their habits"
@@ -93,5 +111,10 @@ create policy "Users can manage their habit completions"
 -- Cada usuario solo puede ver y modificar sus propias metas mensuales.
 create policy "Users can manage their monthly goals"
   on public.monthly_goals for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can manage their vacations"
+  on public.vacations for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);

@@ -1,6 +1,6 @@
 // Pantalla para crear o editar un hábito con todos sus detalles.
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable } from 'react-native';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -15,24 +15,33 @@ export default function NewHabit({ navigation, route }: any) {
   const userId = route?.params?.userId;
   const [name, setName] = useState(editingHabit?.name ?? '');
   const [target, setTarget] = useState(editingHabit?.targetAmount ?? '');
+  const [note, setNote] = useState(editingHabit?.note ?? '');
   const [selectedColor, setSelectedColor] = useState(editingHabit?.color ?? '#000000');
   const [frequency, setFrequency] = useState(editingHabit?.frequency ?? 'daily');
   const [category, setCategory] = useState<HabitItem['category']>(editingHabit?.category ?? 'productivity');
   const [quantity, setQuantity] = useState(editingHabit?.quantity ? String(editingHabit.quantity) : '');
   const [unit, setUnit] = useState<HabitItem['unit']>(editingHabit?.unit ?? 'custom');
   const [priority, setPriority] = useState(editingHabit?.priority ?? 2);
+  const [scheduledDays, setScheduledDays] = useState<number[]>(editingHabit?.scheduledDays ?? []);
+  const [difficulty, setDifficulty] = useState<NonNullable<HabitItem['difficulty']>>(editingHabit?.difficulty ?? 'medium');
+  const [tagsInput, setTagsInput] = useState((editingHabit?.tags ?? []).join(', '));
   const [subtasks, setSubtasks] = useState<Subtask[]>(editingHabit?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setName(editingHabit?.name ?? '');
     setTarget(editingHabit?.targetAmount ?? '');
+    setNote(editingHabit?.note ?? '');
     setSelectedColor(editingHabit?.color ?? '#000000');
     setFrequency(editingHabit?.frequency ?? 'daily');
     setCategory(editingHabit?.category ?? 'productivity');
     setQuantity(editingHabit?.quantity ? String(editingHabit.quantity) : '');
     setUnit(editingHabit?.unit ?? 'custom');
     setPriority(editingHabit?.priority ?? 2);
+    setScheduledDays(editingHabit?.scheduledDays ?? []);
+    setDifficulty(editingHabit?.difficulty ?? 'medium');
+    setTagsInput((editingHabit?.tags ?? []).join(', '));
     setSubtasks(editingHabit?.subtasks ?? []);
   }, [editingHabit]);
 
@@ -49,12 +58,25 @@ export default function NewHabit({ navigation, route }: any) {
     { key: 'productivity' as const, label: t('productivity') },
   ];
   const units = [
-    { key: 'glasses' as const, label: t('glasses') },
-    { key: 'minutes' as const, label: t('minutes') },
-    { key: 'pages' as const, label: t('pages') },
-    { key: 'kilometers' as const, label: t('kilometers') },
-    { key: 'custom' as const, label: t('customUnit') },
+    { key: 'glasses' as const, label: 'Vasos' },
+    { key: 'minutes' as const, label: 'Minutos' },
+    { key: 'pages' as const, label: 'Páginas' },
+    { key: 'kilometers' as const, label: 'Kilómetros' },
+    { key: 'custom' as const, label: 'Personalizada' },
   ];
+  const templates = [
+    { label: 'Mañana productiva', name: 'Rutina de mañana', category: 'productivity' as const, note: 'Completa tu rutina antes de empezar el día.' },
+    { label: 'Estudio', name: 'Sesión de estudio', category: 'study' as const, note: 'Elige un tema y estudia sin distracciones.' },
+    { label: 'Ejercicio', name: 'Entrenamiento', category: 'exercise' as const, note: 'Calienta antes de comenzar.' },
+    { label: 'Autocuidado', name: 'Tiempo para mí', category: 'health' as const, note: 'Dedica unos minutos a tu bienestar.' },
+  ];
+
+  const applyTemplate = (template: typeof templates[number]) => {
+    setName(template.name);
+    setCategory(template.category);
+    setNote(template.note);
+    setSubtasks([]);
+  };
 
   // Agrega una subtarea solo si la persona escribió algún texto.
   const addSubtask = () => {
@@ -73,21 +95,29 @@ export default function NewHabit({ navigation, route }: any) {
     const habitData = {
       name: name.trim(),
       targetAmount: target.trim() || undefined,
+      note: note.trim() || undefined,
       color: selectedColor,
       frequency,
       category,
-      quantity: quantity.trim() ? Number(quantity) : undefined,
-      unit: quantity.trim() ? unit : undefined,
+      quantity: Number.isFinite(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : undefined,
+      unit: Number.isFinite(Number(quantity)) && Number(quantity) > 0 ? unit : undefined,
       priority,
+      scheduledDays,
+      difficulty,
+      tags: tagsInput.split(',').map((tag: string) => tag.trim()).filter(Boolean),
       subtasks,
     };
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       if (editingHabit) await updateHabit(editingHabit.id, habitData);
       else await addHabit(habitData, userId);
     } catch (error: any) {
       console.warn('Error al guardar el hábito:', error?.message ?? error);
       alert(error?.message ?? 'No se pudo guardar el hábito.');
       return;
+    } finally {
+      setIsSaving(false);
     }
     navigation.setParams({ habit: undefined });
     navigation.navigate('HoyTab');
@@ -99,6 +129,16 @@ export default function NewHabit({ navigation, route }: any) {
       <Text style={styles.subtitle}>{t('newHabitSubtitle')}</Text>
 
       <View style={styles.card}>
+        {!editingHabit && <>
+          <Text style={styles.sectionLabel}>Plantillas de rutina</Text>
+          <View style={styles.optionRow}>
+            {templates.map((template) => (
+              <Pressable key={template.label} onPress={() => applyTemplate(template)} style={styles.option}>
+                <Text style={styles.optionText}>{template.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>}
         <CustomInput
           label={t('habitName')}
           placeholder={t('habitPlaceholder')}
@@ -108,12 +148,23 @@ export default function NewHabit({ navigation, route }: any) {
           blackBorder
         />
 
-        <CustomInput
-          label={t('dailyTarget')}
-          placeholder={t('targetPlaceholder')}
-          value={target}
-          onChangeText={setTarget}
-          blackBorder
+        <Text style={styles.sectionLabel}>Nota del hábito (opcional)</Text>
+        <TextInput
+          value={note}
+          onChangeText={setNote}
+          placeholder="Ejemplo: Recordar repasar el tema más difícil"
+          placeholderTextColor="#000000"
+          multiline
+          style={[styles.noteInput, { backgroundColor: '#FFFFFF' }]}
+        />
+
+        <Text style={styles.sectionLabel}>Etiquetas personalizadas</Text>
+        <TextInput
+          value={tagsInput}
+          onChangeText={setTagsInput}
+          placeholder="Ejemplo: Universidad, Casa, Salud"
+          placeholderTextColor="#000000"
+          style={[styles.tagsInput, { backgroundColor: '#FFFFFF' }]}
         />
 
         <CustomInput
@@ -140,8 +191,28 @@ export default function NewHabit({ navigation, route }: any) {
           {[1, 2, 3].map((level) => <Pressable key={level} onPress={() => setPriority(level)} style={[styles.freqBtn, priority === level && styles.freqBtnActive]}><Text style={[styles.freqText, priority === level && styles.freqTextActive]}>{t(`priority${level}`)}</Text></Pressable>)}
         </View>
 
+        <Text style={styles.sectionLabel}>Dificultad</Text>
+        <View style={styles.freqRow}>
+          {([['easy', 'Fácil'], ['medium', 'Media'], ['hard', 'Difícil']] as const).map(([level, label]) => (
+            <Pressable key={level} onPress={() => setDifficulty(level)} style={[styles.freqBtn, difficulty === level && styles.optionActive]}>
+              <Text style={[styles.freqText, difficulty === level && styles.optionTextActive]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
         <Text style={styles.sectionLabel}>{t('subtasks')}</Text>
-        {subtasks.map((subtask) => <View key={subtask.id} style={styles.subtaskEditorRow}><Text style={styles.subtaskEditorText}>{subtask.title}</Text><Pressable onPress={() => setSubtasks((current) => current.filter((item) => item.id !== subtask.id))}><Text style={styles.removeText}>x</Text></Pressable></View>)}
+        {subtasks.map((subtask) => (
+          <View key={subtask.id} style={styles.subtaskEditorRow}>
+            <Text style={styles.subtaskEditorText}>{subtask.title}</Text>
+            <Pressable
+              onPress={() => setSubtasks((current) => current.filter((item) => item.id !== subtask.id))}
+              style={styles.removeSubtaskButton}
+              accessibilityLabel="Eliminar subtarea"
+            >
+              <Text style={styles.removeText}>x</Text>
+            </Pressable>
+          </View>
+        ))}
         <View style={styles.subtaskInputRow}>
           <View style={styles.subtaskInput}><CustomInput label="" placeholder={t('subtaskPlaceholder')} value={newSubtask} onChangeText={setNewSubtask} blackBorder compact /></View>
           <Pressable onPress={addSubtask} style={styles.addSubtask}><Text style={styles.addSubtaskText}>+</Text></Pressable>
@@ -172,6 +243,22 @@ export default function NewHabit({ navigation, route }: any) {
           ))}
         </View>
 
+        <Text style={styles.sectionLabel}>Días programados</Text>
+        <View style={styles.optionRow}>
+          {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day, index) => {
+            const selected = scheduledDays.includes(index);
+            return (
+              <Pressable
+                key={day}
+                onPress={() => setScheduledDays((current) => selected ? current.filter((item) => item !== index) : [...current, index])}
+                style={[styles.option, selected && styles.optionActive]}
+              >
+                <Text style={[styles.optionText, selected && styles.optionTextActive]}>{day}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* Colores */}
         <Text style={styles.sectionLabel}>{t('habitColor')}</Text>
         <View style={styles.colorsRow}>
@@ -189,7 +276,7 @@ export default function NewHabit({ navigation, route }: any) {
         </View>
 
         <CustomButton
-          title={t('saveHabit')}
+          title={isSaving ? 'Guardando...' : t('saveHabit')}
           onPress={handleSave}
           variant="primary"
         />
@@ -209,12 +296,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#0f172a',
+    color: '#000000',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 13,
     color: '#000000',
+    fontWeight: 'bold',
     marginBottom: 16,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#ffffff',
@@ -225,10 +315,33 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 13,
-    fontWeight: 'bold',
+    fontWeight: '900',
     color: '#000000',
     marginTop: 10,
     marginBottom: 8,
+  },
+  noteInput: {
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
+    borderRadius: 10,
+    borderWidth: 1,
+    color: '#000000',
+    fontSize: 14,
+    minHeight: 56,
+    padding: 12,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  tagsInput: {
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
+    borderRadius: 10,
+    borderWidth: 1,
+    color: '#000000',
+    fontSize: 14,
+    height: 48,
+    marginBottom: 12,
+    paddingHorizontal: 12,
   },
   freqRow: {
     flexDirection: 'row',
@@ -238,14 +351,14 @@ const styles = StyleSheet.create({
   freqBtn: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#000000',
     borderRadius: 10,
     alignItems: 'center',
   },
   freqBtnActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     borderColor: '#000000',
     borderWidth: 1,
   },
@@ -255,7 +368,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   freqTextActive: {
-    color: '#030303',
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   optionRow: {
@@ -272,8 +385,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   optionActive: {
-    backgroundColor: '#0f172a',
-    borderColor: '#0f172a',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   optionText: {
     color: '#000000',
@@ -294,7 +407,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 48,
     borderRadius: 10,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
@@ -307,19 +420,30 @@ const styles = StyleSheet.create({
   subtaskEditorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000000',
-    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#000000',
+    borderRadius: 10,
+    minHeight: 48,
+    paddingLeft: 12,
+    marginBottom: 8,
   },
   subtaskEditorText: {
     flex: 1,
     color: '#000000',
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  removeSubtaskButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    width: 46,
+    borderLeftWidth: 1,
+    borderLeftColor: '#000000',
   },
   removeText: {
     color: '#ef4444',
-    fontSize: 22,
-    paddingHorizontal: 8,
+    fontSize: 24,
   },
   colorsRow: {
     flexDirection: 'row',

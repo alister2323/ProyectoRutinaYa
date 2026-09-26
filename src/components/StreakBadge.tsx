@@ -4,6 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 type StreakBadgeProps = {
+  // Cantidad de días consecutivos completados.
   streak: number;
 };
 
@@ -12,17 +13,19 @@ export default function StreakBadge({ streak }: StreakBadgeProps) {
   const isBroken = streak === 0;
 
   if (isBroken) {
+    // Cuando no hay racha se muestra 0 días con el mismo diseño del indicador.
     return (
       <View style={[styles.badge, styles.badgeBroken]}>
-        <Ionicons name="flame" size={14} color="#94a3b8" />
+        <Ionicons name="flame" size={14} color="#000000" />
         <Text style={styles.textBroken}>0d</Text>
       </View>
     );
   }
 
   return (
+    // Cuando sí hay racha se muestra la cantidad recibida desde el hábito.
     <View style={[styles.badge, styles.badgeActive]}>
-      <Ionicons name="flame" size={15} color="#ea580c" />
+      <Ionicons name="flame" size={15} color="#000000" />
       <Text style={styles.textActive}>{streak}d</Text>
     </View>
   );
@@ -50,11 +53,11 @@ const styles = StyleSheet.create({
   textBroken: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: '#000000',
   },
   textActive: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#ea580c',
+    color: '#000000',
   },
 });

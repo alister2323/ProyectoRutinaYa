@@ -3,6 +3,7 @@ import { createNavigationContainerRef } from "@react-navigation/native";
 import { RootStackParamList } from "./StackNavigator";
 
 // La referencia se conecta con NavigationContainer en App.tsx.
+// Después otros archivos pueden usarla sin recibir navigation como parámetro.
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 // Referencia global para navegar desde servicios que no reciben la prop navigation.

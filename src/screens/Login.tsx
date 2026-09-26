@@ -4,12 +4,12 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { useAuth } from '../contexts/AuthContext';
@@ -58,13 +58,10 @@ export default function Login({ navigation }: any) {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Imagen local mostrada correctamente según rúbrica */}
         <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <View style={styles.logoMark}>
+            <Ionicons name="checkmark" size={44} color="#ffffff" />
+          </View>
           <Text style={styles.title}>{t('title')}</Text>
           <Text style={styles.subtitle}>{t('subtitle')}</Text>
           <View style={styles.tag}>
@@ -100,6 +97,7 @@ export default function Login({ navigation }: any) {
             value={email}
             onChangeText={setEmail}
             required
+            blackBorder
           />
 
           <CustomInput
@@ -109,6 +107,7 @@ export default function Login({ navigation }: any) {
             value={password}
             onChangeText={setPassword}
             required
+            blackBorder
           />
 
           <CustomButton
@@ -163,10 +162,13 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     textDecorationLine: 'underline',
   },
-  logoImage: {
+  logoMark: {
     width: 80,
     height: 80,
-    borderRadius: 16,
+    borderRadius: 40,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
   },
   title: {
@@ -194,9 +196,10 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderColor: '#000000',
+    borderRadius: 12,
+    borderWidth: 1,
     padding: 20,
-    elevation: 3,
   },
   formTitle: {
     fontSize: 18,

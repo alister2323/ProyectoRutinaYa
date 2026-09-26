@@ -7,6 +7,7 @@ import { navigationRef } from "./src/navigation/NavigationService";
 import { AuthProvider } from "./src/contexts/AuthContext";
 import { LanguageProvider } from "./src/contexts/LanguageContext";
 import { HabitProvider } from "./src/contexts/HabitContext";
+import { ThemeProvider } from "./src/contexts/ThemeContext";
 
 export default function App() {
   // Monta los proveedores globales y la navegación principal de la aplicación.
@@ -14,13 +15,15 @@ export default function App() {
   // Los proveedores permiten que todas las pantallas compartan sesión, idioma y hábitos.
   return (
       <AuthProvider>
-        <LanguageProvider>
-          <HabitProvider>
-          <NavigationContainer ref={navigationRef}>
-            <StackNavigator />
-          </NavigationContainer>
-          </HabitProvider>
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <HabitProvider>
+            <NavigationContainer ref={navigationRef}>
+              <StackNavigator />
+            </NavigationContainer>
+            </HabitProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </AuthProvider>
   );
 }

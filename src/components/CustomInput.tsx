@@ -97,7 +97,7 @@ export default function CustomInput({
         )}
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { outlineStyle: 'none' } as any]}
           onChangeText={onChangeText}
           value={value}
           placeholder={placeholder}
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '800',
     color: '#000000',
     marginBottom: 5,
   },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   inputContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

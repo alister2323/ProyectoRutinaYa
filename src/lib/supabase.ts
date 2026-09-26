@@ -19,12 +19,16 @@ const globalScope = globalThis as typeof globalThis & {
 	__rutinayaSupabase?: SupabaseClient;
 };
 
-// En web no reutilizamos el refresh token que quedó limitado o inválido en localStorage.
+// Persistimos la sesión en las tres plataformas, pero cada una con SU storage nativo:
+// - web: localStorage (el que Supabase espera de forma nativa en navegador).
+// - iOS/Android: AsyncStorage (no existe localStorage ahí).
+// Usar AsyncStorage en web causaba un bucle infinito de refresh (eventos de "otra pestaña" falsos).
 export const supabase = globalScope.__rutinayaSupabase ?? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 	auth: {
-		storage: Platform.OS === 'web' ? undefined : AsyncStorage,
-		persistSession: Platform.OS !== 'web',
-		autoRefreshToken: Platform.OS !== 'web',
+		storage: Platform.OS === 'web' ? window.localStorage : AsyncStorage,
+		storageKey: 'rutinaya-auth-session',
+		persistSession: true,
+		autoRefreshToken: false,
 		detectSessionInUrl: false,
 	},
 });

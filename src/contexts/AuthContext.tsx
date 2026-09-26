@@ -19,6 +19,7 @@ export type AuthContextType = {
   loading: boolean;
   register: (email: string, password: string, name: string, phone: string) => Promise<void>;
   login: (email: string, password: string) => Promise<NonNullable<User>>;
+  updateProfile: (name: string, phone: string) => Promise<void>;
   ensureSession: () => Promise<NonNullable<User>>;
   logout: () => Promise<void>;
 };
@@ -72,35 +73,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Recupera la sesión guardada y escucha cambios de autenticación.
-    // Recupera la sesión guardada cuando la aplicación vuelve a abrirse.
-    let authEventDuringInitialization = false;
-
-    // Primero escucha cambios para no perder un login que ocurra mientras se carga la sesión.
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      authEventDuringInitialization = true;
-      if (session?.user) {
-        updateUser(toUser(session.user, session.access_token, session.refresh_token));
-        return;
-      }
-
-      // No intentes restaurar aquí: setSession() vuelve a emitir este evento y provocaría un ciclo.
-      // La recuperación se hace únicamente cuando la persona guarda un hábito o una meta.
-    });
-
+    // Restaura la sesión una vez al abrir. En Expo Web los eventos de Auth pueden
+    // duplicarse durante Fast Refresh y no deben limpiar los hábitos en pantalla.
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
         console.warn('No se pudo restaurar la sesión:', error.message);
-        if (!authEventDuringInitialization) updateUser(null);
+        if (!userRef.current) updateUser(null);
       } else if (data.session?.user) {
         updateUser(toUser(data.session.user, data.session.access_token, data.session.refresh_token));
-      } else if (!authEventDuringInitialization) {
-        // Solo limpia el usuario si ningún evento de login/logout ocurrió durante la carga.
+      } else if (!userRef.current) {
+        // No sobrescribas un login que haya terminado mientras getSession() estaba pendiente.
         updateUser(null);
       }
     }).finally(() => setLoading(false));
-
-    return () => authListener.subscription.unsubscribe();
   }, []);
 
   const register = async (email: string, password: string, name: string, phone: string) => {
@@ -141,6 +126,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     throw new Error('No se pudo obtener la sesión');
   };
 
+  const updateProfile = async (name: string, phone: string) => {
+    const { data, error } = await supabase.auth.updateUser({ data: { name, phone } });
+    if (error) throw error;
+    if (data.user) updateUser(toUser(data.user));
+  };
+
 
   const logout = async () => {
     // Cierra la sesión en Supabase y limpia el usuario local.
@@ -150,7 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, ensureSession, logout }}>
+    <AuthContext.Provider value={{ user, loading, register, login, updateProfile, ensureSession, logout }}>
       {children}
     </AuthContext.Provider>
   );

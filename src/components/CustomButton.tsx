@@ -3,9 +3,13 @@ import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
 type CustomButtonProps = {
+  // Texto visible dentro del botón.
   title: string;
+  // Acción que se ejecuta cuando la persona presiona el botón.
   onPress: () => void;
+  // Define el color y propósito visual del botón.
   variant?: 'primary' | 'secondary' | 'danger';
+  // Muestra un indicador mientras una acción tarda en responder.
   loading?: boolean;
 };
 
@@ -23,6 +27,7 @@ export default function CustomButton({
     <Pressable
       style={styles.button}
       onPress={onPress}
+      // Evita que se envíe dos veces la misma acción mientras está cargando.
       disabled={loading}
     >
       {loading ? (
@@ -38,13 +43,16 @@ export default function CustomButton({
 const getStyles = (variant: 'primary' | 'secondary' | 'danger') =>
   StyleSheet.create({
     button: {
+      // El color cambia según si la acción es principal, secundaria o peligrosa.
       backgroundColor:
         variant === 'primary'
           ? '#0c0c0c'
           : variant === 'secondary'
-          ? '#e2e8f0'
+          ? '#ffffff'
           : '#ef4444',
       borderRadius: 12,
+      borderColor: '#000000',
+      borderWidth: 1,
       width: '100%',
       paddingVertical: 14,
       marginVertical: 6,

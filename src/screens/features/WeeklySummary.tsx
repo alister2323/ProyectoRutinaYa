@@ -1,7 +1,8 @@
 // Pantalla de análisis: metas, comparación semanal, calendario e historial.
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { jsPDF } from 'jspdf';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getHabitStats, useHabits } from '../../contexts/HabitContext';
 import CustomInput from '../../components/CustomInput';
@@ -54,6 +55,13 @@ export default function WeeklySummary() {
   });
   const previousWeekTotal = previousWeekDates.reduce((total, date) => total + activeHabits.filter((habit) => habit.history?.[toDateKey(date)]).length, 0);
   const weekDifference = thisWeekTotal - previousWeekTotal;
+  const currentMonthPrefix = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const previousMonthDate = new Date();
+  previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
+  const previousMonthPrefix = `${previousMonthDate.getFullYear()}-${String(previousMonthDate.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthTotal = new Set(activeHabits.flatMap((habit) => Object.keys(habit.history ?? {}).filter((date) => date.startsWith(currentMonthPrefix)))).size;
+  const previousMonthTotal = new Set(activeHabits.flatMap((habit) => Object.keys(habit.history ?? {}).filter((date) => date.startsWith(previousMonthPrefix)))).size;
+  const monthDifference = currentMonthTotal - previousMonthTotal;
   // Guarda la meta mensual después de convertir el texto a número.
   const saveGoal = async () => {
     const target = Number(goalInput);
@@ -65,11 +73,90 @@ export default function WeeklySummary() {
     }
   };
   const changeMonth = (offset: number) => setMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+  const exportSummary = () => {
+    // El PDF solo se descarga desde un navegador; Expo Go no puede crear archivos así.
+    if (Platform.OS !== 'web') {
+      alert('La exportación PDF está disponible en la versión web.');
+      return;
+    }
+
+    // Crea el documento y escribe un encabezado con los datos generales del progreso.
+    const pdf = new jsPDF();
+    const reportDate = new Date().toLocaleDateString('es-HN', { day: 'numeric', month: 'long', year: 'numeric' });
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(20);
+    pdf.text('RutinaYa', 18, 20);
+    pdf.setFontSize(14);
+    pdf.text('Resumen de hábitos', 18, 30);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.text(`Generado el ${reportDate}`, 18, 38);
+    pdf.text(`Meta mensual: ${monthlyGoal ?? 'Sin definir'} días`, 18, 45);
+    pdf.text(`Cumplimiento general: ${overallCompletion}%`, 18, 52);
+    pdf.text(`Días cumplidos este mes: ${currentMonthTotal}`, 18, 59);
+    pdf.text(`Comparación mensual: ${monthDifference > 0 ? '+' : ''}${monthDifference} días`, 18, 66);
+
+    // Esta posición sube en cada fila para evitar que el contenido se encime.
+    let verticalPosition = 80;
+    pdf.setFillColor(0, 0, 0);
+    pdf.rect(18, verticalPosition - 7, 174, 8, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Hábito', 21, verticalPosition - 1);
+    pdf.text('Días', 133, verticalPosition - 1);
+    pdf.text('Mejor racha', 157, verticalPosition - 1);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+    verticalPosition += 8;
+
+    habits.forEach((habit) => {
+      const stats = getHabitStats(habit);
+      const schedule = habit.scheduledDays?.length
+        ? habit.scheduledDays.map((day) => dayNames[day]).join(', ')
+        : 'Todos los días';
+      const tags = habit.tags?.length ? habit.tags.map((tag) => `#${tag}`).join(' ') : 'Sin etiquetas';
+      const difficulty = habit.difficulty === 'easy' ? 'Fácil' : habit.difficulty === 'hard' ? 'Difícil' : 'Media';
+
+      // Cada hábito usa varias líneas; crea una página nueva cuando ya no hay espacio.
+      if (verticalPosition > 245) {
+        pdf.addPage();
+        verticalPosition = 22;
+      }
+      pdf.setDrawColor(0, 0, 0);
+      pdf.roundedRect(18, verticalPosition - 5, 174, 35, 2, 2, 'S');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(habit.name.slice(0, 52), 22, verticalPosition + 1);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.text(`Categoría: ${habit.category} · Dificultad: ${difficulty} · Prioridad: ${habit.priority}`, 22, verticalPosition + 8);
+      pdf.text(`Programado: ${schedule}`, 22, verticalPosition + 15);
+      pdf.text(`Etiquetas: ${tags}`.slice(0, 88), 22, verticalPosition + 22);
+      pdf.text(`Cumplidos: ${stats.totalCompleted} · Racha actual: ${stats.currentStreak} · Mejor racha: ${stats.bestStreak}`, 22, verticalPosition + 29);
+      pdf.setFontSize(10);
+      verticalPosition += 41;
+    });
+
+    if (habits.length === 0) pdf.text('Todavía no hay hábitos creados.', 18, verticalPosition);
+
+    // Convierte el PDF a un archivo descargable sin abrir otra pestaña.
+    const pdfUrl = URL.createObjectURL(pdf.output('blob'));
+    const downloadLink = document.createElement('a');
+    downloadLink.href = pdfUrl;
+    downloadLink.download = 'resumen-rutinaya.pdf';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(pdfUrl);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{t('weeklySummary')}</Text>
       <Text style={styles.subtitle}>{t('lastSevenDays')}</Text>
+      <Pressable onPress={exportSummary} style={styles.exportButton}>
+        <Ionicons name="download-outline" size={16} color="#ffffff" />
+        <Text style={styles.exportText}>Descargar PDF</Text>
+      </Pressable>
 
       <View style={styles.metricCard}>
         <View style={styles.metricRow}>
@@ -95,6 +182,15 @@ export default function WeeklySummary() {
           <View><Text style={styles.comparisonLabel}>{t('thisWeek')}</Text><Text style={styles.comparisonValue}>{thisWeekTotal}</Text></View>
           <View><Text style={styles.comparisonLabel}>{t('lastWeek')}</Text><Text style={styles.comparisonValue}>{previousWeekTotal}</Text></View>
           <View><Text style={styles.comparisonLabel}>{t('difference')}</Text><Text style={[styles.comparisonValue, weekDifference >= 0 ? styles.positive : styles.negative]}>{weekDifference > 0 ? '+' : ''}{weekDifference}</Text></View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionHeader}>Comparación mensual</Text>
+        <View style={styles.comparisonRow}>
+          <View><Text style={styles.comparisonLabel}>Este mes</Text><Text style={styles.comparisonValue}>{currentMonthTotal}</Text></View>
+          <View><Text style={styles.comparisonLabel}>Mes anterior</Text><Text style={styles.comparisonValue}>{previousMonthTotal}</Text></View>
+          <View><Text style={styles.comparisonLabel}>Diferencia</Text><Text style={[styles.comparisonValue, monthDifference >= 0 ? styles.positive : styles.negative]}>{monthDifference > 0 ? '+' : ''}{monthDifference}</Text></View>
         </View>
       </View>
 
@@ -167,9 +263,11 @@ function Metric({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 20, paddingBottom: 32 },
-  title: { fontSize: 22, fontWeight: '900', color: '#0f172a' },
-  subtitle: { fontSize: 13, color: '#000000', marginBottom: 16 },
+  title: { fontSize: 22, fontWeight: '900', color: '#000000', textAlign: 'center' },
+  subtitle: { fontSize: 13, color: '#000000', fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
   metricCard: { backgroundColor: '#080808', borderRadius: 16, padding: 18, marginBottom: 16 },
+  exportButton: { alignItems: 'center', alignSelf: 'center', backgroundColor: '#000000', borderRadius: 8, flexDirection: 'row', gap: 6, marginBottom: 14, paddingHorizontal: 12, paddingVertical: 9 },
+  exportText: { color: '#ffffff', fontSize: 12, fontWeight: '800' },
   metricRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   metricLabel: { color: '#ffffff', fontSize: 15, fontWeight: 'bold' },
   metricValue: { color: '#ffffff', fontSize: 32, fontWeight: '900' },
@@ -177,15 +275,15 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#000000' },
   goalProgress: { color: '#000000', fontSize: 13, fontWeight: '700', marginBottom: 8 },
   goalTrack: { height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
-  goalFill: { height: '100%', backgroundColor: '#0f172a', borderRadius: 4 },
+  goalFill: { height: '100%', backgroundColor: '#000000', borderRadius: 4 },
   goalInputRow: { flexDirection: 'row', alignItems: 'center' },
   goalInput: { flex: 1 },
-  saveGoal: { backgroundColor: '#0f172a', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginLeft: 8 },
+  saveGoal: { backgroundColor: '#000000', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, marginLeft: 8 },
   saveGoalText: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
   comparisonRow: { flexDirection: 'row', justifyContent: 'space-between' },
   comparisonLabel: { color: '#000000', fontSize: 11 },
   comparisonValue: { color: '#0f172a', fontSize: 22, fontWeight: '900', marginTop: 4 },
-  positive: { color: '#15803d' },
+  positive: { color: '#7c3aed' },
   negative: { color: '#b91c1c' },
   sectionHeader: { fontSize: 15, fontWeight: 'bold', color: '#000000', marginBottom: 12 },
   monthHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -193,7 +291,7 @@ const styles = StyleSheet.create({
   monthTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a', textTransform: 'capitalize' },
   habitSelector: { gap: 8, paddingBottom: 14 },
   habitChip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 16, paddingHorizontal: 10, paddingVertical: 7, maxWidth: 160 },
-  habitChipActive: { backgroundColor: '#0f172a', borderColor: '#0f172a' },
+  habitChipActive: { backgroundColor: '#000000', borderColor: '#000000' },
   habitChipText: { color: '#334155', fontSize: 12 },
   habitChipTextActive: { color: '#ffffff' },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 7 },
@@ -212,7 +310,7 @@ const styles = StyleSheet.create({
   barCol: { alignItems: 'center', flex: 1 },
   barPct: { fontSize: 10, color: '#000000', marginBottom: 4 },
   barTrack: { width: 14, height: 90, backgroundColor: '#f1f5f9', borderRadius: 6, justifyContent: 'flex-end', overflow: 'hidden' },
-  barFill: { width: '100%', backgroundColor: '#0f172a', borderRadius: 6 },
+  barFill: { width: '100%', backgroundColor: '#000000', borderRadius: 6 },
   dayText: { fontSize: 11, fontWeight: '600', color: '#000000', marginTop: 6 },
   historyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   habitName: { flex: 1, fontSize: 13, color: '#000000', fontWeight: '600' },

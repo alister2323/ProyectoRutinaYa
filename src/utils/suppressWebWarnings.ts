@@ -24,3 +24,14 @@ console.error = (...args: unknown[]) => {
   if (isIgnoredWebMessage(args)) return;
   originalError(...(args as Parameters<typeof console.error>));
 };
+
+if (typeof document !== 'undefined') {
+  const scrollbarStyles = document.createElement('style');
+  scrollbarStyles.textContent = `
+    * { scrollbar-color: #000000 #f8fafc; }
+    *::-webkit-scrollbar { width: 10px; }
+    *::-webkit-scrollbar-track { background: #f8fafc; }
+    *::-webkit-scrollbar-thumb { background: #000000; border-radius: 8px; }
+  `;
+  document.head.appendChild(scrollbarStyles);
+}

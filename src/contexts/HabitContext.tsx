@@ -12,7 +12,7 @@ type HabitContextType = {
   setMonthlyGoal: (targetDays: number) => Promise<void>;
   addHabit: (habit: Omit<HabitItem, 'id' | 'isPaused' | 'currentStreak' | 'completedToday' | 'history'>, userIdOverride?: string) => Promise<void>;
   updateHabit: (id: string, habit: Omit<HabitItem, 'id' | 'isPaused' | 'currentStreak' | 'completedToday' | 'history'>) => Promise<void>;
-  toggleHabit: (id: string) => Promise<void>;
+  toggleHabit: (id: string, reflection?: string) => Promise<void>;
   toggleSubtask: (habitId: string, subtaskId: string) => Promise<void>;
   pauseHabit: (id: string) => Promise<void>;
   removeHabit: (id: string) => Promise<void>;
@@ -30,6 +30,10 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   // Devuelve la fecha actual con el formato que usa la tabla: AAAA-MM-DD.
   const today = () => new Date().toISOString().slice(0, 10);
+  const currentMonthStart = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  };
 
   useEffect(() => {
     // Recarga los datos cuando cambia la cuenta autenticada.
@@ -42,13 +46,11 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     const loadHabits = async () => {
       // Obtiene en paralelo los hábitos y las fechas que se han completado.
       setLoading(true);
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      const monthStartKey = monthStart.toISOString().slice(0, 10);
+      const monthStartKey = currentMonthStart();
       // Carga hábitos, días cumplidos y meta mensual al mismo tiempo.
       const [{ data: habitRows, error: habitsError }, { data: completionRows, error: completionsError }, { data: goalRow, error: goalError }] = await Promise.all([
         supabase.from('habits').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
-        supabase.from('habit_completions').select('habit_id, completed_on').eq('user_id', user.id),
+        supabase.from('habit_completions').select('habit_id, completed_on, reflection').eq('user_id', user.id),
         supabase.from('monthly_goals').select('target_days').eq('user_id', user.id).eq('month_start', monthStartKey).maybeSingle(),
       ]);
 
@@ -59,9 +61,14 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
       }
 
       const historyByHabit: Record<string, Record<string, boolean>> = {};
+      const notesByHabit: Record<string, Record<string, string>> = {};
       (completionRows ?? []).forEach((completion) => {
         historyByHabit[completion.habit_id] ??= {};
         historyByHabit[completion.habit_id][completion.completed_on] = true;
+        if (completion.reflection) {
+          notesByHabit[completion.habit_id] ??= {};
+          notesByHabit[completion.habit_id][completion.completed_on] = completion.reflection;
+        }
       });
 
       setHabits((habitRows ?? []).map((habit) => {
@@ -71,14 +78,19 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
           name: habit.name,
           color: habit.color,
           targetAmount: habit.target_amount ?? undefined,
+          note: habit.note ?? undefined,
+          difficulty: habit.difficulty ?? 'medium',
+          tags: Array.isArray(habit.tags) ? habit.tags : [],
           frequency: habit.frequency,
           category: habit.category ?? 'productivity',
           quantity: habit.quantity ?? undefined,
           unit: habit.unit ?? undefined,
           priority: habit.priority ?? 2,
+          scheduledDays: Array.isArray(habit.scheduled_days) ? habit.scheduled_days : [],
           subtasks: Array.isArray(habit.subtasks) ? habit.subtasks : [],
           isPaused: Boolean(habit.is_paused),
           history,
+          completionNotes: notesByHabit[habit.id] ?? {},
           completedToday: Boolean(history[today()]),
           currentStreak: calculateStreak(history),
         };
@@ -94,16 +106,14 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     if (!Number.isFinite(targetDays) || targetDays < 1) return;
     const authenticatedUser = await ensureSession();
     const userId = authenticatedUser.id;
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    const monthStartKey = monthStart.toISOString().slice(0, 10);
-    const { error } = await supabase.from('monthly_goals').upsert({
+    const monthStartKey = currentMonthStart();
+    const { data, error } = await supabase.from('monthly_goals').upsert({
       user_id: userId,
       month_start: monthStartKey,
       target_days: Math.round(targetDays),
-    }, { onConflict: 'user_id,month_start' });
+    }, { onConflict: 'user_id,month_start' }).select('target_days').single();
     if (error) throw error;
-    setMonthlyGoalValue(Math.round(targetDays));
+    setMonthlyGoalValue(data.target_days);
   };
 
   const addHabit = async (habit: Omit<HabitItem, 'id' | 'isPaused' | 'currentStreak' | 'completedToday' | 'history'>, userIdOverride?: string) => {
@@ -114,12 +124,16 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
       user_id: userId,
       name: habit.name,
       target_amount: habit.targetAmount ?? null,
+      note: habit.note ?? null,
       color: habit.color,
       frequency: habit.frequency,
       category: habit.category,
       quantity: habit.quantity ?? null,
       unit: habit.unit ?? null,
       priority: habit.priority,
+      difficulty: habit.difficulty ?? 'medium',
+      tags: habit.tags ?? [],
+      scheduled_days: habit.scheduledDays ?? [],
       subtasks: habit.subtasks,
       is_paused: false,
     }).select().single();
@@ -131,10 +145,15 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
       currentStreak: 0,
       completedToday: false,
       history: {},
+      completionNotes: {},
       category: habit.category,
       quantity: habit.quantity,
+      note: habit.note,
       unit: habit.unit,
       priority: habit.priority,
+      difficulty: habit.difficulty,
+      tags: habit.tags,
+      scheduledDays: habit.scheduledDays,
       subtasks: habit.subtasks,
       isPaused: false,
     }]);
@@ -152,7 +171,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     setHabits((currentHabits) => currentHabits.map((item) => item.id === habitId ? { ...item, subtasks } : item));
   };
 
-  const toggleHabit = async (id: string) => {
+  const toggleHabit = async (id: string, reflection?: string) => {
     // Marca o desmarca el día actual y recalcula la racha consecutiva.
     if (!user) return;
     const habit = habits.find((item) => item.id === id);
@@ -161,14 +180,17 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     const completedToday = !habit.completedToday;
     const query = supabase.from('habit_completions');
     const { error } = completedToday
-      ? await query.insert({ habit_id: id, user_id: user.id, completed_on: date })
+      ? await query.insert({ habit_id: id, user_id: user.id, completed_on: date, reflection: reflection?.trim() || null })
       : await query.delete().eq('habit_id', id).eq('user_id', user.id).eq('completed_on', date);
 
     if (error) throw error;
     setHabits((currentHabits) => currentHabits.map((currentHabit) => {
       if (currentHabit.id !== id) return currentHabit;
       const history = { ...(currentHabit.history ?? {}), [date]: completedToday };
-      return { ...currentHabit, completedToday, history, currentStreak: calculateStreak(history) };
+      const completionNotes = { ...(currentHabit.completionNotes ?? {}) };
+      if (completedToday && reflection?.trim()) completionNotes[date] = reflection.trim();
+      if (!completedToday) delete completionNotes[date];
+      return { ...currentHabit, completedToday, history, completionNotes, currentStreak: calculateStreak(history) };
     }));
   };
 
@@ -195,12 +217,16 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.from('habits').update({
       name: habit.name,
       target_amount: habit.targetAmount ?? null,
+      note: habit.note ?? null,
       color: habit.color,
       frequency: habit.frequency,
       category: habit.category,
       quantity: habit.quantity ?? null,
       unit: habit.unit ?? null,
       priority: habit.priority,
+      difficulty: habit.difficulty ?? 'medium',
+      tags: habit.tags ?? [],
+      scheduled_days: habit.scheduledDays ?? [],
       subtasks: habit.subtasks,
     }).eq('id', id).eq('user_id', user.id);
 
